@@ -1,20 +1,25 @@
 package net.noah.cbconverter;
 
+import com.minecolonies.api.colony.IColonyManager;
+import com.minecolonies.api.colony.IColonyView;
+import com.minecolonies.api.colony.buildings.IBuilding;
+import com.minecolonies.api.colony.buildings.views.IBuildingView;
+import com.minecolonies.api.util.BlockPosUtil;
+import com.minecolonies.core.colony.buildings.moduleviews.BuildingResourcesModuleView;
+import com.minecolonies.core.colony.buildings.utils.BuildingBuilderResource;
+import com.minecolonies.core.colony.buildings.workerbuildings.BuildingBuilder;
+import com.minecolonies.core.items.ItemResourceScroll;
 import com.mojang.logging.LogUtils;
+import com.simibubi.create.content.equipment.clipboard.ClipboardBlockItem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.world.food.FoodProperties;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.CreativeModeTabs;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.material.MapColor;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.*;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -23,10 +28,11 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.noah.cbconverter.networking.ModMessages;
 import org.slf4j.Logger;
+
+import java.util.HashMap;
+import java.util.Map;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(net.noah.cbconverter.CBConverter.MOD_ID)
@@ -59,12 +65,109 @@ public class CBConverter
     {
         // Some common setup code
         LOGGER.info("HELLO FROM COMMON SETUP (CBConverter)");
+
+        event.enqueueWork(() -> {
+            ModMessages.register();
+        });
     }
 
-    // Add the example block item to the building blocks tab
-    private void addCreative(BuildCreativeModeTabContentsEvent event)
-    {
+    public Map<ItemStack, Integer> getDataFromResourceScroll(ItemStack ResourceScrollStack) {
+        // Get NBT Data CompoundTag
+        CompoundTag tag = ResourceScrollStack.getOrCreateTag();
 
+        // Get Colony Information
+        int colonyID = tag.getInt("colony");
+        BlockPos builderPos = tag.contains("builder") ? BlockPosUtil.read(tag, "builder") : null;
+        IColonyView colonyView = IColonyManager.getInstance().getColonyView(colonyID, Minecraft.getInstance().level.dimension());
+
+        // Works
+        //LOGGER.debug("Colony ID: {}", colonyID);
+        //LOGGER.debug("Builder Pos: {}", builderPos);
+
+        if (colonyView == null) {
+            LOGGER.error("Colony View is null");
+            return null;
+        }
+        else {
+            LOGGER.debug("Colony View is not null. Cool.");
+            IBuildingView buildingView = colonyView.getBuilding(builderPos);
+            if ( !(buildingView instanceof BuildingBuilder.View) ) {
+                LOGGER.error("Building View is not a BuildingBuilder.View");
+                return null;
+            }
+            else {
+                LOGGER.debug("Yay. The builder is apparently building. Nice!");
+                BuildingBuilder.View buildingBuilderView = (BuildingBuilder.View) buildingView;
+
+                BuildingResourcesModuleView resourcesModuleView = buildingBuilderView.getModuleViewByType(BuildingResourcesModuleView.class);
+
+                if (resourcesModuleView == null) {
+                    LOGGER.error("Resources Module View is null");
+                    return null;
+                }
+                else {
+                    LOGGER.debug("Resources Module View is not null. Very nice.");
+
+                    Map<String, BuildingBuilderResource> requiredResources = resourcesModuleView.getResources();
+                    //LOGGER.debug("Required Resources: {}", requiredResources);
+
+                    Map<ItemStack, Integer> extractedResources = new HashMap<>();
+                    for (Map.Entry<String, BuildingBuilderResource> entry : requiredResources.entrySet()) {
+                        String resourceName = entry.getKey();
+                        BuildingBuilderResource resource = entry.getValue();
+
+                        try {
+                            int resourceAmount = resource.getAmount();
+                            ItemStack resourceStack = resource.getItemStack();
+                            CompoundTag resourceTag = resourceStack.getTag();
+//                          LOGGER.debug("Resource Name: {}", resourceName);
+//                          LOGGER.debug("Resource Amount: {}", resourceAmount);
+//                          LOGGER.debug("Resource Stack: {}", resourceStack);
+//                          LOGGER.debug("Resource Tag: {}", resourceTag);
+                            extractedResources.put(resourceStack, resourceAmount);
+                        } catch (Exception e) {
+                            LOGGER.error("Error processing resource: {}", resourceName, e.getMessage());
+                        }
+                    }
+                    return extractedResources; // This is a Map<ItemStack, Integer>
+                }
+            }
+        }
+    }
+
+    public void convertToClipboardData(Map<ItemStack, Integer> ExtractedResources) {
+
+    }
+
+    // Event Listener for Player right click (this should be on the client)
+    @SubscribeEvent
+    public void onPlayerRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        if (event.getHand() != InteractionHand.MAIN_HAND) {
+            return;
+        }
+
+        if (event.getLevel().isClientSide) {
+            ItemStack mainHandItem = event.getItemStack();
+            ItemStack offHandItem = event.getEntity().getOffhandItem();
+
+            if(mainHandItem.getItem() instanceof ItemResourceScroll &&
+            offHandItem.getItem() instanceof ClipboardBlockItem)  {
+
+                /// Get data and check
+                Map<ItemStack, Integer> dataFromResourceScroll = getDataFromResourceScroll(mainHandItem);
+                LOGGER.debug("Resources from ResourceScroll <ItemStack, Integer>:\n{}", dataFromResourceScroll);
+                if (dataFromResourceScroll == null) { return; }
+
+                /// Convert Data
+
+
+                // If success
+                event.getEntity().displayClientMessage(Component.literal("Successfully copied to Clipboard"), true);
+
+                // If no success
+                event.getEntity().displayClientMessage(Component.literal("Failed to copy to Clipboard"), true);
+            }
+        }
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call
