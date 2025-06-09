@@ -28,14 +28,14 @@ public class ModMessages {
     public static void register() {
         int packetID = 0;
 
-        // 1. Client to server
+        // 1. Client to server (Server "Requests" the Resources Message from the Client)
         INSTANCE.messageBuilder(RequestResourcesMessage.class, nextPacketID(), NetworkDirection.PLAY_TO_SERVER)
                 .decoder(RequestResourcesMessage::new)
                 .encoder(RequestResourcesMessage::encode)
                 .consumerMainThread(RequestResourcesMessage::handle)
                 .add();
 
-        // 2. Server to client
+        // 2. Server to client (Server "Responds" to the client with the new Resources Message
         INSTANCE.messageBuilder(ResponseResourcesMessage.class, nextPacketID(), NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(ResponseResourcesMessage::new)
                 .encoder(ResponseResourcesMessage::encode)

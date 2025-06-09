@@ -34,6 +34,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.noah.cbconverter.networking.ModMessages;
+import net.noah.cbconverter.networking.RequestResourcesMessage;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
@@ -142,7 +143,6 @@ public class CBConverter
         }
     }
 
-    // TODO: Change return type when it is known!
     public ItemStack convertToClipboardData(Map<ItemStack, Integer> ExtractedResources) {
         if (ExtractedResources == null || ExtractedResources.isEmpty()) {
             LOGGER.error("Extracted Resources is null or empty");
@@ -241,23 +241,40 @@ public class CBConverter
             if(mainHandItem.getItem() instanceof ItemResourceScroll &&
             offHandItem.getItem() instanceof ClipboardBlockItem)  {
 
-                // Get data and check
-                Map<ItemStack, Integer> dataFromResourceScroll = getDataFromResourceScroll(mainHandItem);
-                LOGGER.debug("Resources from ResourceScroll <ItemStack, Integer>:\n{}", dataFromResourceScroll);
-                if (dataFromResourceScroll == null) {
-                    LOGGER.warn("No resources found in ResourceScroll.");
+                // Extract the NBT data from the ResourceScroll
+                CompoundTag ResourceScrollNbtTag = mainHandItem.getOrCreateTag();
+
+                if (ResourceScrollNbtTag.isEmpty()) {
+                    LOGGER.warn("ResourceScroll appears to be empty.");
+                    player.displayClientMessage(Component.literal("ResourceScroll is apparantly empty? Idiot."), true);
                     return;
                 }
 
-                // Convert the ResourceScroll data to a Create Clipboard - note that we don't get the data back but the actual already converted Clipboard ItemStack
-                ItemStack convertedClipboard = convertToClipboardData(dataFromResourceScroll);
-                LOGGER.debug("Received a converted Create Clipboard.");
+                // This is now the server edition of the mod. If it doesn't work, comment it out and uncomment the client side code below. Maybe this works then. I don't know.
+                ModMessages.sendToServer(new RequestResourcesMessage(ResourceScrollNbtTag));
+                event.setCanceled(true); // This is so the ResourceScroll doesn't open
 
-                // Replace the empty Clipboard in offhand with the new converted Clipboard
-                player.setItemInHand(InteractionHand.OFF_HAND, convertedClipboard);
-                event.getLevel().playSound(player, player.blockPosition(), SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, SoundSource.PLAYERS, 1.0F, 1.0F);
-                LOGGER.debug("Replaced empty Clipboard in offhand with the new converted Clipboard. Finished process. Thanks for reading :)");
-                player.displayClientMessage(Component.literal("Successfully copied to Clipboard"), true);
+
+                // The following is only Client side, so I will comment it out for now
+                //
+                //
+                // Get data and check
+//                Map<ItemStack, Integer> dataFromResourceScroll = getDataFromResourceScroll(mainHandItem);
+//                LOGGER.debug("Resources from ResourceScroll <ItemStack, Integer>:\n{}", dataFromResourceScroll);
+//                if (dataFromResourceScroll == null) {
+//                    LOGGER.warn("No resources found in ResourceScroll.");
+//                    return;
+//                }
+//
+//                // Convert the ResourceScroll data to a Create Clipboard - note that we don't get the data back but the actual already converted Clipboard ItemStack
+//                ItemStack convertedClipboard = convertToClipboardData(dataFromResourceScroll);
+//                LOGGER.debug("Received a converted Create Clipboard.");
+//
+//                // Replace the empty Clipboard in offhand with the new converted Clipboard
+//                player.setItemInHand(InteractionHand.OFF_HAND, convertedClipboard);
+//                event.getLevel().playSound(player, player.blockPosition(), SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, SoundSource.PLAYERS, 1.0F, 1.0F);
+//                LOGGER.debug("Replaced empty Clipboard in offhand with the new converted Clipboard. Finished process. Thanks for reading :)");
+//                player.displayClientMessage(Component.literal("Successfully copied to Clipboard"), true);
 
             }
         }
