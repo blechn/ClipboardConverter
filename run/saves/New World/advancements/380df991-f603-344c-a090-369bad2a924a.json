@@ -410,5 +410,197 @@
     },
     "done": true
   },
+  "minecraft:recipes/redstone/lever": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "minecolonies:recipes/misc/supplycampdeployer": {
+    "criteria": {
+      "has_chest": "2025-06-09 17:42:06 +0200"
+    },
+    "done": true
+  },
+  "domum_ornamentum:recipes/tools/blue_cobblestone_extra": {
+    "criteria": {
+      "has_material": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "minecolonies:recipes/misc/blockhutwarehouse": {
+    "criteria": {
+      "has_items": "2025-06-09 17:42:06 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/combat/stone_sword": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/decorations/cobblestone_wall": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/tools/stone_axe": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "minecraft:story/mine_stone": {
+    "criteria": {
+      "get_stone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/decorations/furnace": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "create:chute": {
+    "criteria": {
+      "0": "2025-06-09 17:45:42 +0200"
+    },
+    "done": true
+  },
+  "minecolonies:recipes/misc/blockpostbox": {
+    "criteria": {
+      "has_items": "2025-06-09 17:42:06 +0200"
+    },
+    "done": true
+  },
+  "create:recipes/misc/crafting/logistics/stock_ticker_clear": {
+    "criteria": {
+      "has_item": "2025-06-09 17:40:20 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/building_blocks/cobblestone_slab_from_cobblestone_stonecutting": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/building_blocks/stone": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "create:recipes/misc/crafting/logistics/factory_gauge": {
+    "criteria": {
+      "has_item": "2025-06-09 17:40:16 +0200"
+    },
+    "done": true
+  },
+  "create:packager": {
+    "criteria": {
+      "0": "2025-06-09 17:46:24 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/tools/stone_pickaxe": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "domum_ornamentum:recipes/tools/green_cobblestone_extra": {
+    "criteria": {
+      "has_material": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "domum_ornamentum:recipes/tools/cobblestone_extra": {
+    "criteria": {
+      "has_material": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/building_blocks/cobblestone_slab": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "create:recipes/misc/crafting/logistics/repackager_from_conversion": {
+    "criteria": {
+      "has_item": "2025-06-09 17:40:08 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/decorations/cobblestone_wall_from_cobblestone_stonecutting": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/building_blocks/cobblestone_stairs_from_cobblestone_stonecutting": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "create:stock_ticker": {
+    "criteria": {
+      "0": "2025-06-09 17:46:24 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/building_blocks/cobblestone_stairs": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "create:burner": {
+    "criteria": {
+      "0": "2025-06-09 17:42:13 +0200"
+    },
+    "done": true
+  },
+  "create:recipes/misc/crafting/logistics/stock_link_clear": {
+    "criteria": {
+      "has_item": "2025-06-09 17:40:16 +0200"
+    },
+    "done": true
+  },
+  "create:frogport": {
+    "criteria": {
+      "0": "2025-06-09 17:46:32 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/tools/stone_hoe": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "minecraft:recipes/tools/stone_shovel": {
+    "criteria": {
+      "has_cobblestone": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "domum_ornamentum:recipes/tools/purple_cobblestone_extra": {
+    "criteria": {
+      "has_material": "2025-06-09 17:45:32 +0200"
+    },
+    "done": true
+  },
+  "minecolonies:recipes/misc/blockstash": {
+    "criteria": {
+      "has_items": "2025-06-09 17:42:06 +0200"
+    },
+    "done": true
+  },
   "DataVersion": 3465
 }

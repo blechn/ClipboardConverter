@@ -11,11 +11,16 @@ import com.minecolonies.core.colony.buildings.workerbuildings.BuildingBuilder;
 import com.minecolonies.core.items.ItemResourceScroll;
 import com.mojang.logging.LogUtils;
 import com.simibubi.create.content.equipment.clipboard.ClipboardBlockItem;
+import com.simibubi.create.content.schematics.cannon.MaterialChecklist;
+import com.simibubi.create.content.schematics.requirement.ItemRequirement;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -32,6 +37,7 @@ import net.noah.cbconverter.networking.ModMessages;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // The value here should match an entry in the META-INF/mods.toml file
@@ -111,7 +117,8 @@ public class CBConverter
                     Map<String, BuildingBuilderResource> requiredResources = resourcesModuleView.getResources();
                     //LOGGER.debug("Required Resources: {}", requiredResources);
 
-                    Map<ItemStack, Integer> extractedResources = new HashMap<>();
+                    Map<ItemStack, Integer> extractedResources = new HashMap<>(); // This is the returned Map
+
                     for (Map.Entry<String, BuildingBuilderResource> entry : requiredResources.entrySet()) {
                         String resourceName = entry.getKey();
                         BuildingBuilderResource resource = entry.getValue();
@@ -135,8 +142,88 @@ public class CBConverter
         }
     }
 
-    public void convertToClipboardData(Map<ItemStack, Integer> ExtractedResources) {
+    // TODO: Change return type when it is known!
+    public ItemStack convertToClipboardData(Map<ItemStack, Integer> ExtractedResources) {
+        if (ExtractedResources == null || ExtractedResources.isEmpty()) {
+            LOGGER.error("Extracted Resources is null or empty");
+            return null;
+        }
+        else {
+            LOGGER.info("Starting conversion of {} unique items to Create Clipboard Data", ExtractedResources.size());
 
+            // Checklist for materials creation, gets filled in the for loop below
+            MaterialChecklist checklist = new MaterialChecklist();
+
+            int processed_items = 0;
+            int failed_items = 0;
+            for (Map.Entry<ItemStack, Integer> entry: ExtractedResources.entrySet()) {
+                ItemStack originalStack = entry.getKey();
+                Integer originalAmount = entry.getValue();
+
+                // Check
+                if (originalStack == null || originalStack.isEmpty() || originalAmount == null) {
+                    LOGGER.error("Error processing item: {} - Amount or Item is Null or Empty", originalStack);
+                    return null;
+                }
+                // If check OK continue here
+
+                try {
+                    LOGGER.debug("Processing item: {} - Amount: {}", originalStack, originalAmount);
+                    ItemStack convStackWithAmount = originalStack.copy();
+                    convStackWithAmount.setCount(originalAmount);
+                    LOGGER.debug("Created ItemStack with Quantity: {} x{}", convStackWithAmount.getDisplayName().getString(), convStackWithAmount.getCount());
+
+                    ItemRequirement requirement;
+
+                    // Detect if NBT data is available, very important for Domum Ornamentum Items
+                    boolean hasNBT = convStackWithAmount.hasTag();
+                    if (hasNBT) {
+                        LOGGER.debug("Has NBT: {}", convStackWithAmount.getTag());
+
+                        // Create StrictNbtStackRequirement for the item with NBT data
+                        ItemRequirement.StackRequirement strictRequirement = new ItemRequirement.StrictNbtStackRequirement(convStackWithAmount, ItemRequirement.ItemUseType.CONSUME);
+                        requirement = new ItemRequirement(List.of(strictRequirement));
+                        LOGGER.debug("Created ItemRequirement with StrictNbtStackRequirement for item {}", convStackWithAmount);
+                    }
+                    else {
+                        LOGGER.debug("Does not have NBT");
+
+                        // Create a 'regular' ItemRequirement for the item since it has no important NBT data
+                        requirement = new ItemRequirement(ItemRequirement.ItemUseType.CONSUME, convStackWithAmount);
+                        LOGGER.debug("Created ItemRequirement with ItemRequirement for item {}", convStackWithAmount);
+                    }
+
+                    // Add the requirement to the MaterialChecklist
+                    checklist.require(requirement);
+                    LOGGER.debug("Added requirement for item {} to MaterialChecklist", convStackWithAmount);
+
+                    processed_items++;
+                } catch (Exception e) {
+                    LOGGER.error("Error processing item: {} - {}", originalStack, e.getMessage());
+                    failed_items++;
+                }
+            }
+            // End of for loop, now the MaterialChecklist is filled with (hopefully) all neccessary items
+            LOGGER.debug("Finished processing {} items, {} failed.\nMaterialChecklist is created.", processed_items, failed_items);
+
+            // Now, create the final Clipboard with the items
+            try {
+                ItemStack finalClipboard = checklist.createWrittenClipboard();
+                LOGGER.debug("Created Clipboard");
+
+                // Check if it actually has items in it
+                if (finalClipboard.isEmpty()) {
+                    LOGGER.error("Final Clipboard is empty, shit.");
+                    return null;
+                }
+
+                LOGGER.info("Finished conversion to Create Clipboard with {} unique items. Yippie!", processed_items);
+                return finalClipboard;
+            } catch (Exception e) {
+                LOGGER.error("Error creating Clipboard: {}", e.getMessage());
+                return null;
+            }
+        }
     }
 
     // Event Listener for Player right click (this should be on the client)
@@ -147,25 +234,31 @@ public class CBConverter
         }
 
         if (event.getLevel().isClientSide) {
+            Player player = event.getEntity();
             ItemStack mainHandItem = event.getItemStack();
             ItemStack offHandItem = event.getEntity().getOffhandItem();
 
             if(mainHandItem.getItem() instanceof ItemResourceScroll &&
             offHandItem.getItem() instanceof ClipboardBlockItem)  {
 
-                /// Get data and check
+                // Get data and check
                 Map<ItemStack, Integer> dataFromResourceScroll = getDataFromResourceScroll(mainHandItem);
                 LOGGER.debug("Resources from ResourceScroll <ItemStack, Integer>:\n{}", dataFromResourceScroll);
-                if (dataFromResourceScroll == null) { return; }
+                if (dataFromResourceScroll == null) {
+                    LOGGER.warn("No resources found in ResourceScroll.");
+                    return;
+                }
 
-                /// Convert Data
+                // Convert the ResourceScroll data to a Create Clipboard - note that we don't get the data back but the actual already converted Clipboard ItemStack
+                ItemStack convertedClipboard = convertToClipboardData(dataFromResourceScroll);
+                LOGGER.debug("Received a converted Create Clipboard.");
 
+                // Replace the empty Clipboard in offhand with the new converted Clipboard
+                player.setItemInHand(InteractionHand.OFF_HAND, convertedClipboard);
+                event.getLevel().playSound(player, player.blockPosition(), SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, SoundSource.PLAYERS, 1.0F, 1.0F);
+                LOGGER.debug("Replaced empty Clipboard in offhand with the new converted Clipboard. Finished process. Thanks for reading :)");
+                player.displayClientMessage(Component.literal("Successfully copied to Clipboard"), true);
 
-                // If success
-                event.getEntity().displayClientMessage(Component.literal("Successfully copied to Clipboard"), true);
-
-                // If no success
-                event.getEntity().displayClientMessage(Component.literal("Failed to copy to Clipboard"), true);
             }
         }
     }
