@@ -22,6 +22,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
+import net.noah.cbconverter.NbtMaterialChecklist;
 import org.apache.logging.log4j.core.jmx.Server;
 
 import java.util.HashMap;
@@ -129,7 +130,7 @@ public class RequestResourcesMessage {
             System.out.println("Starting conversion of "+ ExtractedResources.size() +" unique items to Create Clipboard Data");
 
             // Checklist for materials creation, gets filled in the for loop below
-            MaterialChecklist checklist = new MaterialChecklist();
+            NbtMaterialChecklist checklist = new NbtMaterialChecklist();
 
             int processed_items = 0;
             int failed_items = 0;
@@ -139,10 +140,12 @@ public class RequestResourcesMessage {
 
                 // Check
                 if (originalStack == null || originalStack.isEmpty() || originalAmount == null) {
-                    System.err.println("Error processing item: "+ originalStack.getDisplayName().getString() +" - Amount or Item is Null or Empty");
-                    return null;
+                    System.err.println("Error processing item: "+ originalStack.getDisplayName().getString() +" - Amount or Item is Null or Empty. Skipping this item.");
+                    continue;
                 }
-                // If check OK continue here
+
+                // If the item is from Domum Ornamentum, it needs additional nbt data stored in the clipboard
+                boolean isDomumOrnamentum = originalStack.getItem().toString().contains("domum_ornamentum"); // TODO: is there a better way to check this?
 
                 try {
                     System.out.println("Processing item: "+ originalStack.getDisplayName().getString() +" - Amount: " + originalAmount.toString());
@@ -156,6 +159,7 @@ public class RequestResourcesMessage {
                     boolean hasNBT = convStackWithAmount.hasTag();
                     if (hasNBT) {
                         System.out.println("Has NBT: "+ convStackWithAmount.getTag().toString());
+                        convStackWithAmount.setTag(originalStack.getTag());
 
                         // Create StrictNbtStackRequirement for the item with NBT data
                         ItemRequirement.StackRequirement strictRequirement = new ItemRequirement.StrictNbtStackRequirement(convStackWithAmount, ItemRequirement.ItemUseType.CONSUME);
@@ -185,7 +189,7 @@ public class RequestResourcesMessage {
 
             // Now, create the final Clipboard with the items
             try {
-                ItemStack finalClipboard = checklist.createWrittenClipboard();
+                ItemStack finalClipboard = checklist.createWrittenClipboardNbt();
                 System.out.println("Created Clipboard");
 
                 // Check if it actually has items in it
@@ -225,6 +229,7 @@ public class RequestResourcesMessage {
 
             // Convert to Clipboard and get ItemStack
             ItemStack finalClipboard = this.convertToClipboardDataServer(extractedResources);
+            System.out.println("Final Clipboard NBT Data: "+ finalClipboard.getTag().toString());
 
             if (finalClipboard == null) {
                 System.err.println("Error converting to Clipboard.");
@@ -234,6 +239,7 @@ public class RequestResourcesMessage {
 
             System.out.println("Server: Converted to Clipboard.");
 
+            // Replace Converted Clipboard in Player Offhand
             try {
                 sender.setItemInHand(InteractionHand.OFF_HAND, finalClipboard);
                 sender.playSound(SoundEvents.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, 1.0F, 1.0F);
